@@ -1,0 +1,8 @@
+profileVersion = "v1"
+
+[[supports]]
+game = "eldenring"
+
+[[natives]]
+path = "bin/x64/Release/SeamlessArena.dll"
+initializer = { function = "SeamlessArena_Initialize" }
