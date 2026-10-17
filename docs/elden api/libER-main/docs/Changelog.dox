@@ -1,0 +1,51 @@
+/**
+ * @page changelog_page Changelog
+ * 
+ * ## Version 0.1.0.0:
+ *   - Initial release
+ * 
+ * ## Version 0.1.1.0:
+ *   - Streamline allocation interface
+ *   - Remove exposed get_allocator_of methods
+ *   - Now, from::allocator<T> can deallocate anything natively
+ * 
+ * ## Version 0.1.2.0:
+ *   - Add functionality to load files from disk or the game's vfs asynchronously
+ *   - Add 2 new examples: getting a gparam resource (after loading the file it is in),
+ *     loading and playing back a sound from a wwise soundbank
+ *   - Initial sound engine implementation, 2D wwise sound playback
+ *   - Update resource types and layouts, document file/resource capsules
+ *   - from::shared_ptr with a delay deleter
+ *   - Fix allocator heuristic error
+ *   - Increase documentation coverage
+ *   - Update liber::optref pointer and reference constructors
+ *   - Start laying out namespace DLIO and DLIOD types for native file I/O
+ * 
+ * ## Version 0.1.2.1:
+ *   - Add @link from::CS::CSWindowImp CSWindowImp @endlink documentation by <a href="https://github.com/ThomasJClark">ThomasJClark</a>
+ * 
+ * ## Version 0.1.3.0:
+ *   - Add graphics directory for GX* namespaces
+ *   - Add graphics/draw with a DirectX 12 drawing helper task abstract class
+ *   - Add a sample D3D12 triangle example under examples/d3d12/sample_triangle.cpp
+ *   - play_system_sound and play_character_sound, restructure sound playback
+ *   - Simplify sound playback example
+ * 
+ * ## Version 0.1.4.0:
+ *   - Add runtime param manipulation based on a pull request by <a href="https://github.com/ThomasJClark">ThomasJClark</a>
+ *   - Add 186 param tables with iterator support
+ *   - Autogenerate paramdef headers with ParamStructGenerator by <a href="https://github.com/tremwil">tremwil</a> and <a href="https://github.com/Nordgaren">Nordgaren</a>
+ *   - Add paramdef Doxygen documentation based on Nordgaren's translations
+ * 
+ * ## Version 0.1.4.1:
+ *   - Initial library post-DLC update (ver. 1.12.3)
+ *   - Support for earlier versions is foregone, no new major executable updates are expected
+ *   - Minor naming scheme fixes (remove Imp/Impl/Implement from singleton names)
+ * 
+ * ## Version 0.1.4.2:
+ *   - Using Smithbox paramdefs:
+ *     - Add 8 new DLC param tables
+ *     - Update existing paramdefs
+ *   - Update SoloParamRepository
+ * 
+ */

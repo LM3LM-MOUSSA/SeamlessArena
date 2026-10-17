@@ -1,0 +1,39 @@
+# =============================================================================
+# SeamlessArena.toml — Configuration Specification
+# =============================================================================
+# RESEARCH: rechres/09-configuration-logging-recovery.md (Section 1)
+# RESEARCH: rechres/10-assets-licensing-distribution.md  (Section 3)
+# =============================================================================
+
+[general]
+# Logging severity filter: "trace", "debug", "info", "warn", "error", "fatal"
+log_level = "info"
+auto_check_updates = false
+
+[rules.duel]
+# Duration in seconds (default: 300 = 5 minutes)
+duration_seconds = 300
+# Crimson Flasks permitted (0 recommended for duel integrity)
+max_crimson_flasks = 0
+# Cerulean Flasks permitted
+max_cerulean_flasks = 3
+# Auto-restore consumed items (boluses, greases, crab) upon match conclusion
+restore_consumables = true
+# Automatically activate Wondrous Physick on countdown end
+auto_physick = true
+
+[rules.ordeal]
+duration_seconds = 300
+score_limit = 10
+respawn_delay_seconds = 4
+spawn_invulnerability_seconds = 3.0
+
+[rules.united_combat]
+duration_seconds = 300
+score_limit = 15
+friendly_fire = false
+
+[arena]
+# Default Colosseum: "royal" (Leyndell m45_00), "caelid" (m45_01), or "limgrave" (m45_02)
+default_colosseum = "limgrave"
+allow_spirit_ashes = false

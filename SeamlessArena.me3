@@ -1,8 +1,29 @@
+# =============================================================================
+# SeamlessArena.me3 — Mod Engine 3 Profile
+# =============================================================================
+# RESEARCH: rechres/03-me3-native-contract.md             (Section 2)
+# RESEARCH: rechres/02-seamless-coop-integration.md      (Section 3.1)
+# RESEARCH: docs/TODO.md                                 (Phase 0 Item 2)
+# =============================================================================
+
 profileVersion = "v1"
 
 [[supports]]
 game = "eldenring"
 
+# 1. Early-loaded Seamless Co-op native extension
+# Explicit path to target Seamless installation
+[[natives]]
+path = "F:/SteamLibrary/steamapps/common/ELDEN RING/Game/SeamlessCoop/ersc.dll"
+optional = false
+enabled = true
+load_early = true
+
+# 2. SeamlessArena native extension
 [[natives]]
 path = "bin/x64/Release/SeamlessArena.dll"
+optional = false
+enabled = true
+load_early = false
 initializer = { function = "SeamlessArena_Initialize" }
+finalizer = "SeamlessArena_Finalize"

@@ -52,24 +52,27 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\SeamlessArena.Core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SEAMLESSARENA_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)docs\elden api\libER-main\include;$(SolutionDir)docs\elden api\libER-main\symbols;$(SolutionDir)deps\minhook\include;$(SolutionDir)src\SeamlessArena.Core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SEAMLESSARENA_EXPORTS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4100;4458;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)docs\elden api\libER-main\build\Debug;$(SolutionDir)deps\minhook\build\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libER_staticd.lib;minhook.x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\SeamlessArena.Core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SEAMLESSARENA_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)docs\elden api\libER-main\include;$(SolutionDir)docs\elden api\libER-main\symbols;$(SolutionDir)deps\minhook\include;$(SolutionDir)src\SeamlessArena.Core\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SEAMLESSARENA_EXPORTS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -77,22 +80,43 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <DisableSpecificWarnings>4100;4458;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)docs\elden api\libER-main\build\Release;$(SolutionDir)deps\minhook\build\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libER_static.lib;minhook.x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="me3_entry.cpp" />
+    <ClCompile Include="ArenaCoordinator.cpp" />
+    <ClCompile Include="ArenaGameTask.cpp" />
+    <ClCompile Include="ArenaNetProtocol.cpp" />
+    <ClCompile Include="ConfigLoader.cpp" />
+    <ClCompile Include="EngineBridge.cpp" />
+    <ClCompile Include="HookManager.cpp" />
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="VersionGuard.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArenaCoordinator.h" />
+    <ClInclude Include="ArenaGameTask.h" />
+    <ClInclude Include="ArenaNetProtocol.h" />
+    <ClInclude Include="ConfigLoader.h" />
+    <ClInclude Include="EngineBridge.h" />
+    <ClInclude Include="HookManager.h" />
+    <ClInclude Include="Logger.h" />
+    <ClInclude Include="VersionGuard.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SeamlessArena.Core\SeamlessArena.Core.vcxproj">
       <Project>{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

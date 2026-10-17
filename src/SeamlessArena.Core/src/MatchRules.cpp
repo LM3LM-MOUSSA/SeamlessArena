@@ -1,3 +1,11 @@
+// =============================================================================
+// MatchRules.cpp — Deterministic Colosseum match rules implementation
+// =============================================================================
+// RESEARCH: rechres/06-pvp-match-rules-state-machine.md (Sections 2, 3, 5)
+// RESEARCH: rechres/01-better-multiplayer-audit.md       (Section 3 — pure rules)
+// RESEARCH: rechres/07-multiplayer-authority-sync.md     (Section 1 — authoritative host)
+// =============================================================================
+
 #include "SeamlessArena/Core/MatchRules.h"
 
 #include <algorithm>
@@ -195,11 +203,87 @@ namespace seamless_arena::core
         if (elapsedSeconds >= secondsRemaining_)
         {
             secondsRemaining_ = 0;
-            FinishByCurrentScore();
+            if (config_.mode == MatchMode::Duel)
+            {
+                // In Duel: timeout with no deaths results in a draw
+                isDraw_ = true;
+                winningPlayer_.reset();
+                phase_ = MatchPhase::Complete;
+            }
+            else
+            {
+                FinishByCurrentScore();
+            }
         }
         else
         {
             secondsRemaining_ -= elapsedSeconds;
+        }
+
+        return true;
+    }
+
+    bool MatchRules::HandleDisconnect(PlayerId playerId)
+    {
+        if (phase_ != MatchPhase::Active)
+        {
+            return false;
+        }
+
+        PlayerState* player = FindPlayer(playerId);
+        if (player == nullptr || !player->connected)
+        {
+            return false;
+        }
+
+        player->connected = false;
+        player->alive = false;
+
+        if (config_.mode == MatchMode::Duel)
+        {
+            // Forfeit in Duel: the surviving connected player wins
+            for (const PlayerState& p : players_)
+            {
+                if (p.id != playerId && p.connected)
+                {
+                    winningPlayer_ = p.id;
+                    phase_ = MatchPhase::Complete;
+                    return true;
+                }
+            }
+            isDraw_ = true;
+            phase_ = MatchPhase::Complete;
+            return true;
+        }
+
+        if (config_.mode == MatchMode::UnitedCombat)
+        {
+            const std::size_t t0 = ConnectedTeamCount(0);
+            const std::size_t t1 = ConnectedTeamCount(1);
+            if (t0 == 0 && t1 == 0)
+            {
+                phase_ = MatchPhase::Cancelled;
+            }
+            else if (t0 == 0)
+            {
+                winningTeam_ = 1;
+                phase_ = MatchPhase::Complete;
+            }
+            else if (t1 == 0)
+            {
+                winningTeam_ = 0;
+                phase_ = MatchPhase::Complete;
+            }
+            return true;
+        }
+
+        if (config_.mode == MatchMode::CombatOrdeal)
+        {
+            if (ConnectedPlayerCount() < 2)
+            {
+                FinishByCurrentScore();
+            }
+            return true;
         }
 
         return true;
@@ -211,6 +295,17 @@ namespace seamless_arena::core
         {
             phase_ = MatchPhase::Cancelled;
         }
+    }
+
+    void MatchRules::Reset()
+    {
+        config_ = {};
+        phase_ = MatchPhase::Lobby;
+        secondsRemaining_ = 0;
+        players_.clear();
+        winningPlayer_.reset();
+        winningTeam_.reset();
+        isDraw_ = false;
     }
 
     MatchSnapshot MatchRules::Snapshot() const
@@ -257,9 +352,35 @@ namespace seamless_arena::core
         return score;
     }
 
+    std::size_t MatchRules::ConnectedTeamCount(std::uint8_t team) const
+    {
+        std::size_t count = 0;
+        for (const PlayerState& player : players_)
+        {
+            if (player.team == team && player.connected)
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    std::size_t MatchRules::ConnectedPlayerCount() const
+    {
+        std::size_t count = 0;
+        for (const PlayerState& player : players_)
+        {
+            if (player.connected)
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     bool MatchRules::IsTimedMode() const
     {
-        return config_.mode == MatchMode::CombatOrdeal || config_.mode == MatchMode::UnitedCombat;
+        return config_.durationSeconds > 0;
     }
 
     void MatchRules::FinishByCurrentScore()
@@ -274,7 +395,7 @@ namespace seamless_arena::core
             }
             else
             {
-                winningTeam_ = teamZeroScore > teamOneScore ? 0 : 1;
+                winningTeam_ = teamZeroScore > teamOneScore ? std::uint8_t{0} : std::uint8_t{1};
             }
         }
         else
@@ -321,4 +442,4 @@ namespace seamless_arena::core
         isDraw_ = true;
         phase_ = MatchPhase::Complete;
     }
-}
+} // namespace seamless_arena::core

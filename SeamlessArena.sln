@@ -5,7 +5,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SeamlessArena.Core", "src\SeamlessArena.Core\SeamlessArena.Core.vcxproj", "{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SeamlessArena.Native", "src\SeamlessArena.Native\SeamlessArena.Native.vcxproj", "{F8219E67-294A-46CA-A3C6-91AB2E81B53F}"
-ProjectSection(ProjectDependencies) = postProject
+	ProjectSection(ProjectDependencies) = postProject
+		{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E} = {A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SeamlessArena.Tests", "src\SeamlessArena.Tests\SeamlessArena.Tests.vcxproj", "{C19B8D42-78A3-4C3F-9124-AE41F0D538B1}"
+	ProjectSection(ProjectDependencies) = postProject
 		{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E} = {A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}
 	EndProjectSection
 EndProject
@@ -23,6 +28,10 @@ Global
 		{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}.Debug|x64.Build.0 = Debug|x64
 		{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}.Release|x64.ActiveCfg = Release|x64
 		{A0D20307-5CE2-49E0-9CFD-7C1D760DB90E}.Release|x64.Build.0 = Release|x64
+		{C19B8D42-78A3-4C3F-9124-AE41F0D538B1}.Debug|x64.ActiveCfg = Debug|x64
+		{C19B8D42-78A3-4C3F-9124-AE41F0D538B1}.Debug|x64.Build.0 = Debug|x64
+		{C19B8D42-78A3-4C3F-9124-AE41F0D538B1}.Release|x64.ActiveCfg = Release|x64
+		{C19B8D42-78A3-4C3F-9124-AE41F0D538B1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
