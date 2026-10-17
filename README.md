@@ -1,5 +1,5 @@
 # SeamlessArena
-the is a prototype for a seamless arena experience,
+this is a prototype for a seamless arena experience,
 designed to enhance palyers interaction and engagement on a seamless coop pvp saison . 
 This project aims to provide a systems where palyers can participate in pvp  various activities
  (duels ,team matches, tournaments) .
