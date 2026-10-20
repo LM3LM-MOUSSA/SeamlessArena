@@ -24,6 +24,7 @@ namespace seamless_arena::native
         bool g_deathHookInstalled = false;
         bool g_damageHookInstalled = false;
         bool g_mapHookInstalled = false;
+        bool g_itemHookInstalled = false;
         bool g_gameTickInstalled = false;
 
         // -- Trampoline prototypes --------------------------------------------
@@ -36,7 +37,31 @@ namespace seamless_arena::native
         typedef void(__fastcall* tApplyDamage)(void* victim, void* attacker, void* dmgData);
         tApplyDamage oApplyDamage = nullptr;
 
+        typedef bool(__fastcall* tPlayerUseGoods)(void* chrIns, uint32_t goodsId, void* unkData);
+        tPlayerUseGoods oPlayerUseGoods = nullptr;
+
         // -- Detour Implementations -------------------------------------------
+
+        bool __fastcall HookedPlayerUseGoods(void* chrIns, uint32_t goodsId, void* unkData)
+        {
+            const uint32_t duelItemId = g_ArenaCoordinator.GetDuelGoodsId();
+            if (goodsId == duelItemId)
+            {
+                uint64_t playerSteamId = reinterpret_cast<uintptr_t>(chrIns);
+                SA_LOG_INFO("ItemHook",
+                    "Custom Duel Item used (Goods ID: %u) by entity 0x%llX.",
+                    goodsId, playerSteamId);
+
+                g_ArenaCoordinator.OnDuelItemUsed(playerSteamId, goodsId);
+                return true;
+            }
+
+            if (oPlayerUseGoods)
+            {
+                return oPlayerUseGoods(chrIns, goodsId, unkData);
+            }
+            return false;
+        }
 
         void __fastcall HookedChrDeadEvent(void* chrIns, void* killerChrIns)
         {
@@ -66,8 +91,11 @@ namespace seamless_arena::native
             }
         }
 
+        void* g_cachedFieldArea = nullptr;
+
         void __fastcall HookedFieldAreaLoadMap(void* fieldArea, uint32_t mapId)
         {
+            g_cachedFieldArea = fieldArea;
             SA_LOG_INFO("MapHook", "FieldArea::LoadMap intercepted for map ID 0x%08X", mapId);
 
             // Clear cached character pointers during map reload (rechres/04 Section 3.1)
@@ -178,10 +206,13 @@ namespace seamless_arena::native
         g_deathHookInstalled = false;
         g_damageHookInstalled = false;
         g_mapHookInstalled = false;
+        g_itemHookInstalled = false;
 
         oChrDeadEvent = nullptr;
         oFieldAreaLoadMap = nullptr;
         oApplyDamage = nullptr;
+        oPlayerUseGoods = nullptr;
+        g_cachedFieldArea = nullptr;
 
         SA_LOG_INFO("HookManager", "All hooks cleanly uninstalled and MinHook uninitialized.");
     }
@@ -227,6 +258,19 @@ namespace seamless_arena::native
         return false;
     }
 
+    bool Hook_DuelItemUse()
+    {
+        if (!g_minHookInitialized)
+        {
+            SA_LOG_ERROR("HookManager", "Hook_DuelItemUse: MinHook not initialized!");
+            return false;
+        }
+
+        SA_LOG_WARN("HookManager",
+            "Hook_DuelItemUse: Byte signature verification pending IDA/Ghidra confirmation (rechres/12). Fail-closed.");
+        return false;
+    }
+
     bool Hook_GameTick()
     {
         // Use libER native FromSoftware task scheduler callback
@@ -240,6 +284,22 @@ namespace seamless_arena::native
         g_gameTickInstalled = true;
         SA_LOG_INFO("HookManager", "Hook_GameTick: Successfully attached via FromSoftware CSEzTask.");
         return true;
+    }
+
+    bool HookManager_RequestMapLoad(uint32_t mapId)
+    {
+        if (g_cachedFieldArea && oFieldAreaLoadMap)
+        {
+            SA_LOG_INFO("HookManager", "Requesting FieldArea::LoadMap for map ID 0x%08X", mapId);
+            oFieldAreaLoadMap(g_cachedFieldArea, mapId);
+            return true;
+        }
+        return false;
+    }
+
+    void* HookManager_GetCachedFieldArea() noexcept
+    {
+        return g_cachedFieldArea;
     }
 
 } // namespace seamless_arena::native

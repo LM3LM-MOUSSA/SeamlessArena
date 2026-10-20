@@ -1,6 +1,6 @@
 # SeamlessArena Build & Verification Guide
 
-**Last Updated:** 17 October 2026  
+**Last Updated:** 18 October 2026
 **Compiler Platform Toolset:** Visual Studio 2026 (`v145`)  
 **Target Architecture:** `x64`  
 **C++ Language Standard:** ISO C++20 (`/std:c++20`)  
@@ -41,7 +41,35 @@ f:\dev\SeamlessArena\
 
 ---
 
-## 3. Clean-Clone Build Procedure
+## 3. Recommended Build: CMake
+
+The repository root contains `CMakeLists.txt`. CMake is the preferred build entry point because it builds the Core library, the ME3 native DLL, the rules runner, and the bundled MinHook/libER dependencies from one configuration. It generates Visual Studio projects, so the result still fits the Visual Studio workflow.
+
+Requirements:
+
+- CMake 3.25 or newer; for the `Visual Studio 18 2026` generator, use a CMake release that lists that generator (the VS 2026 bundled CMake 4.3.1 does)
+- Visual Studio 2026 C++ workload with the MSVC v145 toolset and Windows SDK
+- The MinHook submodule initialized at `deps/minhook`
+- The checked-in libER source at `docs/elden api/libER-main`
+
+Configure and build Release x64 from the repository root:
+
+```powershell
+cmake -S . -B build-cmake -G "Visual Studio 18 2026" -A x64
+cmake --build build-cmake --config Release --parallel
+```
+
+For Debug, use `--config Debug`. Outputs are written under `bin/x64/<Configuration>/`, including `SeamlessArena.dll` and `SeamlessArena.Tests.exe`. This matches the paths used by the existing ME3 profile. To generate a Visual Studio solution, open `build-cmake/SeamlessArena.sln` (or open the root `CMakeLists.txt` with Visual Studio's CMake support).
+
+The standalone rules runner can be run separately after the build:
+
+```powershell
+& "bin\x64\Release\SeamlessArena.Tests.exe"
+```
+
+## 4. Legacy MSBuild Procedure
+
+The existing hand-authored `SeamlessArena.sln` remains available. CMake is the preferred route for new build work; use this route only when maintaining the legacy project files.
 
 Open PowerShell from the repository root:
 
@@ -58,7 +86,7 @@ $msbuild = "C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current
 
 ---
 
-## 4. Compilation Flags and ABI Consistency
+## 5. Compilation Flags and ABI Consistency
 
 To avoid CRT mismatch issues and boundary crashes:
 
@@ -73,7 +101,7 @@ To avoid CRT mismatch issues and boundary crashes:
 
 ---
 
-## 5. Exported C-ABI Verification
+## 6. Exported C-ABI Verification
 
 Verify that `SeamlessArena.dll` exports the unmangled C ABI functions required by Mod Engine 3:
 

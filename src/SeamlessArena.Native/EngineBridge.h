@@ -75,6 +75,15 @@ namespace seamless_arena::native
         [[nodiscard]] static int32_t GetLocalPlayerHp() noexcept;
         [[nodiscard]] static int32_t GetLocalPlayerMaxHp() noexcept;
 
+        // Safely set local player coordinates in engine physics and map memory.
+        static bool SetLocalPlayerPosition(float x, float y, float z) noexcept;
+
+        // Safely get local player coordinates.
+        static bool GetLocalPlayerPosition(float& x, float& y, float& z) noexcept;
+
+        // Safely read local player current animation ID.
+        [[nodiscard]] static int32_t GetLocalPlayerCurrentAnimation() noexcept;
+
         // Memory safety guard: verifies memory range is readable.
         [[nodiscard]] static bool IsReadable(const void* ptr, size_t size) noexcept;
     };

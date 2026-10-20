@@ -13,6 +13,10 @@
 #include <coresystem/task.hpp>
 #include <fd4/detail/fd4_task.hpp>
 
+#include <atomic>
+#include <cstdint>
+#include <mutex>
+
 namespace seamless_arena::native
 {
     class ArenaGameTask : public from::CS::CSEzTask
@@ -33,10 +37,18 @@ namespace seamless_arena::native
         // Remove the task from the engine queue.
         void Stop();
 
-        [[nodiscard]] bool IsRunning() const noexcept { return m_running; }
+        [[nodiscard]] bool IsRunning() const noexcept
+        {
+            return m_running.load(std::memory_order_acquire);
+        }
 
     private:
-        bool m_running{ false };
+        // Serializes ME3 lifecycle calls; the engine callback never takes this lock.
+        std::mutex m_lifecycleMutex;
+        std::atomic<bool> m_running{ false };
+        std::atomic<bool> m_stopRequested{ false };
+        std::atomic<bool> m_shutdown{ false };
+        std::atomic<std::uint32_t> m_activeCallbacks{ 0 };
     };
 
     // Global task instance

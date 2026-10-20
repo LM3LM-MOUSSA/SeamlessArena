@@ -25,12 +25,15 @@ namespace seamless_arena::native
         // [general]
         LogLevel logLevel = LogLevel::Info;
 
+        // [item]
+        std::uint32_t duelGoodsId          = 101; // Duelist's Furled Finger (vanilla)
+
         // [rules.duel]
         std::uint32_t duelDurationSeconds  = 300;
         std::uint8_t  duelMaxCrimson       = 0;
         std::uint8_t  duelMaxCerulean      = 3;
-        bool          duelAutoPhysick      = true;
-        bool          duelRestoreItems     = true;
+        bool          duelAutoPhysick      = false;
+        bool          duelRestoreItems     = false;
 
         // [rules.ordeal]
         std::uint32_t ordealDurationSeconds       = 300;

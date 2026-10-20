@@ -10,17 +10,21 @@
 log_level = "info"
 auto_check_updates = false
 
+[item]
+# Goods row ID for initiating the duel (101 = Duelist's Furled Finger, vanilla item - no regulation.bin editing needed)
+duel_goods_id = 101
+
 [rules.duel]
 # Duration in seconds (default: 300 = 5 minutes)
 duration_seconds = 300
-# Crimson Flasks permitted (0 recommended for duel integrity)
+# Crimson Flasks permitted (0 strictly enforced for duel integrity)
 max_crimson_flasks = 0
 # Cerulean Flasks permitted
 max_cerulean_flasks = 3
-# Auto-restore consumed items (boluses, greases, crab) upon match conclusion
-restore_consumables = true
-# Automatically activate Wondrous Physick on countdown end
-auto_physick = true
+# Auto-restore consumed items upon match conclusion (disabled for Alpha)
+restore_consumables = false
+# Automatically activate Wondrous Physick on countdown end (disabled for Alpha)
+auto_physick = false
 
 [rules.ordeal]
 duration_seconds = 300

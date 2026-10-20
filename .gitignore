@@ -1,6 +1,7 @@
 .vs/
 bin/
 obj/
+build-cmake/
 *.user
 *.suo
 *.me3

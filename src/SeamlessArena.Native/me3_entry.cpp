@@ -10,12 +10,16 @@
 // =============================================================================
 
 #include "ArenaCoordinator.h"
+#include "ArenaGameTask.h"
 #include "ConfigLoader.h"
+#include "EngineBridge.h"
 #include "HookManager.h"
+#include "InGameNotification.h"
 #include "Logger.h"
 #include "VersionGuard.h"
 
 #include <Windows.h>
+#include <atomic>
 
 #define SEAMLESS_ARENA_EXPORT extern "C" __declspec(dllexport)
 
@@ -33,6 +37,68 @@ namespace
     };
 
     BootstrapState g_state = BootstrapState::Disabled;
+
+    HANDLE g_engineInitThread = nullptr;
+    std::atomic<bool> g_stopWorker{ false };
+
+    DWORD WINAPI EngineInitWorkerThread(LPVOID lpParam)
+    {
+        (void)lpParam;
+        SA_LOG_INFO("Bootstrap", "Engine hook worker started. Polling for Elden Ring system initialization (DLSY)...");
+
+        constexpr DWORD kTimeoutMs = 60000;
+        constexpr DWORD kPollIntervalMs = 200;
+        DWORD elapsedMs = 0;
+
+        while (!seamless_arena::native::EngineBridge::IsSystemInitialized() && !g_stopWorker.load(std::memory_order_acquire))
+        {
+            Sleep(kPollIntervalMs);
+            elapsedMs += kPollIntervalMs;
+            if (elapsedMs >= kTimeoutMs)
+            {
+                SA_LOG_WARN("Bootstrap", "Timed out waiting for Elden Ring system initialization (DLSY). Engine hooks deferred.");
+                break;
+            }
+        }
+
+        if (g_stopWorker.load(std::memory_order_acquire))
+        {
+            SA_LOG_INFO("Bootstrap", "Engine hook worker aborted due to shutdown request.");
+            return 0;
+        }
+
+        SA_LOG_INFO("Bootstrap", "Elden Ring system (DLSY) is initialized! Starting InGameNotification and detours...");
+
+        // 1. Initialize In-Game Notification overlay subsystem
+        seamless_arena::native::InGameNotification::Initialize();
+        seamless_arena::native::InGameNotification::Show(
+            "SEAMLESS ARENA",
+            "Loaded! Press F5 or use Duelist's Furled Finger to enter Limgrave Colosseum.",
+            seamless_arena::native::NotificationType::Success,
+            6.0f);
+
+        // 2. Attach individual detours
+        seamless_arena::native::Hook_DuelItemUse();
+        seamless_arena::native::Hook_PlayerDeath();
+        seamless_arena::native::Hook_DamageAttribution();
+        seamless_arena::native::Hook_MapTransition();
+
+        g_state = BootstrapState::Ready;
+        SA_LOG_INFO("Bootstrap", "State: READY. Entering continuous 60Hz coordinator tick loop.");
+
+        // 3. Continuous 60Hz coordinator tick loop
+        // Guarantees coordinator runs every 16ms, ensuring F5 hotkey, item use animations,
+        // and match rules execute continuously.
+        while (!g_stopWorker.load(std::memory_order_acquire))
+        {
+            seamless_arena::native::g_ArenaCoordinator.Tick(0.0166667f);
+            Sleep(16);
+        }
+
+        seamless_arena::native::InGameNotification::Shutdown();
+        SA_LOG_INFO("Bootstrap", "Engine hook worker stopped.");
+        return 0;
+    }
 
     bool InitializeInternal()
     {
@@ -109,7 +175,7 @@ namespace
         }
 
         // ---------------------------------------------------------------------
-        // STEP 6: Hook Subsystem Installation (Transactional)
+        // STEP 6: Hook Subsystem Installation (MinHook Backend)
         // RESEARCH: rechres/08-game-events-hooks.md (Sections 1, 2)
         // RESEARCH: docs/TODO.md (Phase 1 Item 3, 4)
         // ---------------------------------------------------------------------
@@ -121,28 +187,22 @@ namespace
             return false;
         }
 
-        // Attempt detour registration for each monitored event
-        bool deathHookOk  = seamless_arena::native::Hook_PlayerDeath();
-        bool damageHookOk = seamless_arena::native::Hook_DamageAttribution();
-        bool mapHookOk    = seamless_arena::native::Hook_MapTransition();
-        bool tickHookOk   = seamless_arena::native::Hook_GameTick();
-
-        if (!deathHookOk || !damageHookOk || !mapHookOk || !tickHookOk)
+        // Defer game task registration and detours to background worker thread.
+        // This ensures SeamlessArena_Initialize returns immediately to Mod Engine 3
+        // without blocking or attempting to register tasks before the engine task queues exist.
+        g_stopWorker.store(false, std::memory_order_release);
+        g_engineInitThread = CreateThread(nullptr, 0, EngineInitWorkerThread, nullptr, 0, nullptr);
+        if (!g_engineInitThread)
         {
-            // Hooks are currently stubs awaiting verified IDA/Ghidra byte signatures (rechres/08).
-            // Do NOT leave partial or unverified hooks enabled!
-            SA_LOG_WARN("Bootstrap",
-                "One or more gameplay hooks are stubs or unverified on this build. "
-                "Unrolling detours to avoid corrupting memory. Operating in Safe Idle mode.");
-
+            SA_LOG_ERROR("Bootstrap", "Failed to create EngineInitWorkerThread (error: %lu).", GetLastError());
             seamless_arena::native::HookManager_Shutdown();
-            g_state = BootstrapState::SafeIdle;
-            SA_LOG_INFO("Bootstrap", "State: SAFE IDLE. Coordinator active, zero hooks attached.");
-            return true;
+            seamless_arena::native::g_ArenaCoordinator.Shutdown();
+            g_state = BootstrapState::Disabled;
+            return false;
         }
 
         g_state = BootstrapState::Ready;
-        SA_LOG_INFO("Bootstrap", "State: READY. SeamlessArena initialization successful.");
+        SA_LOG_INFO("Bootstrap", "State: READY. SeamlessArena initialized; engine hooks deferred to engine boot.");
         return true;
     }
 
@@ -150,7 +210,16 @@ namespace
     {
         SA_LOG_INFO("Shutdown", "SeamlessArena finalizer invoked by Mod Engine 3.");
 
-        // Deterministic reverse-order shutdown
+        // 1. Stop background engine hook worker if still running
+        if (g_engineInitThread != nullptr)
+        {
+            g_stopWorker.store(true, std::memory_order_release);
+            WaitForSingleObject(g_engineInitThread, 2000);
+            CloseHandle(g_engineInitThread);
+            g_engineInitThread = nullptr;
+        }
+
+        // 2. Deterministic reverse-order shutdown
         // RESEARCH: docs/TODO.md (Phase 1 Item 5)
         if (g_state == BootstrapState::Ready)
         {

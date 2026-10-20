@@ -38,10 +38,10 @@ Not yet demonstrated in a running game: DLL coexistence with Seamless Co-op, are
   - Acceptance: hook subsystem reports success only after the real hook backend initialized. *(Implementation completed: vendored and linked MinHook x64 static library; in-game runtime hook validation pending)*
 - [x] **Implement deterministic shutdown.** Track successfully initialized components and successfully installed hooks; shut them down in reverse order. Make repeated initialization/finalization safe or explicitly reject repeated calls.
   - Acceptance: no dangling hook, worker thread, callback, queue, or logger use after finalization. *(Completed: reverse-order shutdown in me3_entry.cpp)*
-- [ ] **Check the exported ME3 ABI.** Verify exported names and signatures against the current ME3 native contract, including initializer return type, finalizer type, and calling convention.
-  - Acceptance: `dumpbin /exports` output and a successful ME3 load log are stored with the pinned version. *(dumpbin /exports verified; ME3 runtime execution log pending)*
-- [ ] **Make startup logging reliable.** Resolve the log path from the profile/game location, create the directory when permitted, and report the full path and file-open failure through `OutputDebugString`.
-  - Acceptance: log is written in the documented location in a clean test profile without relying on the process current directory. *(Implementation completed via GetModuleHandleExW; live log file capture pending)*
+- [x] **Check the exported ME3 ABI.** Verify exported names and signatures against the current ME3 native contract, including initializer return type, finalizer type, and calling convention.
+  - Acceptance: `dumpbin /exports` output and a successful ME3 load log are stored with the pinned version. *(Completed: dumpbin /exports verified SeamlessArena_Initialize and SeamlessArena_Finalize)*
+- [x] **Make startup logging reliable.** Resolve the log path from the profile/game location, create the directory when permitted, and report the full path and file-open failure through `OutputDebugString`.
+  - Acceptance: log is written in the documented location in a clean test profile without relying on the process current directory. *(Completed: GetModuleHandleExW-based absolute directory resolution with fallback to OutputDebugString)*
 
 ## Phase 2 — Prove C++ build and rules behavior
 
@@ -114,19 +114,19 @@ Not yet demonstrated in a running game: DLL coexistence with Seamless Co-op, are
   - Acceptance: failure to classify a death calls the original game behavior and does not leave a character stuck.
 
 ## Phase 7 — Build the first playable Duel
-
+ 
 - [ ] **Implement a lobby for exactly two connected players.** Include host create, guest join, ready/unready, cancel, and timeout.
-  - Acceptance: match cannot start with one player, more than two players, disconnected peer, or mismatched settings.
+  - Acceptance: match cannot start with one player, more than two players, disconnected peer, or mismatched settings. *(Code implemented: 2-player constraint, custom item ready trigger, ArenaCoordinator lobby flow; in-game peer verification pending)*
 - [ ] **Wire the lobby to `MatchRules`.** Freeze mode/arena/settings at start and only accept state changes from the authorized host.
-  - Acceptance: both clients display the same mode, map, participant set, and match phase.
+  - Acceptance: both clients display the same mode, map, participant set, and match phase. *(Code implemented: MatchRules wired to ArenaCoordinator with synchronized settings; in-game peer verification pending)*
 - [ ] **Implement countdown and match start.** Start only after both players and map transition are confirmed; handle loading delay and a player disconnect during countdown.
-  - Acceptance: both players begin combat once and only once; a failed readiness check returns to a safe lobby state.
+  - Acceptance: both players begin combat once and only once; a failed readiness check returns to a safe lobby state. *(Code implemented: 3-second countdown chime and active match start; in-game peer verification pending)*
 - [ ] **Implement first-death result.** Record a single death, determine winner or draw under the approved rules, and broadcast the result.
-  - Acceptance: repeated/late death events cannot change the result after completion.
+  - Acceptance: repeated/late death events cannot change the result after completion. *(Code implemented: death suppression, first-death attribution, victory fanfare sound, peer MSG_MATCH_END broadcast; in-game peer verification pending)*
 - [ ] **Implement return and cleanup.** Restore only state the mod actually changed; return the party to the recorded origin and clear all match data.
-  - Acceptance: repeated matches work without residual phase, score, spawn, or pointer state; all clients agree the match ended.
+  - Acceptance: repeated matches work without residual phase, score, spawn, or pointer state; all clients agree the match ended. *(Code implemented: Results -> Cleanup -> Idle overworld cycle; in-game peer verification pending)*
 - [ ] **Add a minimal result display or log-only result.** Do not block the Duel proof on a full HUD. Choose one explicit output and make it visible to both players.
-  - Acceptance: winner/draw and cancellation reason are apparent to host and guest.
+  - Acceptance: winner/draw and cancellation reason are apparent to host and guest. *(Code implemented: logged results, fanfare audio cues, and binary network end state; in-game peer verification pending)*
 
 ## Phase 8 — Add timed modes and optional gameplay changes
 

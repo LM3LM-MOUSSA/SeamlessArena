@@ -27,8 +27,9 @@ namespace seamless_arena::native
     // ---- internal state -----------------------------------------------------
     namespace
     {
-        FILE*      g_logFile  = nullptr;
-        LogLevel   g_minLevel = LogLevel::Info;
+        FILE*      g_logFile          = nullptr;
+        FILE*      g_secondaryLogFile  = nullptr;
+        LogLevel   g_minLevel         = LogLevel::Info;
         std::mutex g_logMutex;
 
         const char* LevelToString(LogLevel level)
@@ -109,6 +110,29 @@ namespace seamless_arena::native
             return false;
         }
 
+        // Also open secondary log in workspace logs/ folder
+        try
+        {
+            std::filesystem::path dllPath(resolvedPath);
+            std::filesystem::path repoRoot = dllPath.parent_path().parent_path().parent_path(); // bin/x64/Release -> root
+            std::filesystem::path logsDir = repoRoot / "logs";
+            if (!std::filesystem::exists(logsDir))
+            {
+                std::filesystem::create_directories(logsDir);
+            }
+            std::filesystem::path secondaryLogPath = logsDir / "SeamlessArena.log";
+            fopen_s(&g_secondaryLogFile, secondaryLogPath.string().c_str(), "w");
+            if (g_secondaryLogFile)
+            {
+                fprintf(g_secondaryLogFile, "=== SeamlessArena Log Started ===\n");
+                fprintf(g_secondaryLogFile, "Path: %s\n", secondaryLogPath.string().c_str());
+                fflush(g_secondaryLogFile);
+            }
+        }
+        catch (...)
+        {
+        }
+
         char debugMsg[512];
         sprintf_s(debugMsg, "[SeamlessArena] Log initialized: %s\n", resolvedPath.c_str());
         OutputDebugStringA(debugMsg);
@@ -133,6 +157,12 @@ namespace seamless_arena::native
             fclose(g_logFile);
             g_logFile = nullptr;
         }
+        if (g_secondaryLogFile)
+        {
+            fprintf(g_secondaryLogFile, "=== SeamlessArena Log Closed ===\n");
+            fclose(g_secondaryLogFile);
+            g_secondaryLogFile = nullptr;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -144,24 +174,43 @@ namespace seamless_arena::native
         if (level < g_minLevel) return;
 
         std::lock_guard lock(g_logMutex);
-        if (!g_logFile) return;
+        if (!g_logFile && !g_secondaryLogFile) return;
 
         // Timestamp
         SYSTEMTIME st;
         GetLocalTime(&st);
-        fprintf(g_logFile, "[%04d-%02d-%02d %02d:%02d:%02d.%03d] [%s] [%s] ",
-                st.wYear, st.wMonth, st.wDay,
-                st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
-                LevelToString(level), category);
 
-        // Message
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(g_logFile, fmt, args);
-        va_end(args);
+        if (g_logFile)
+        {
+            fprintf(g_logFile, "[%04d-%02d-%02d %02d:%02d:%02d.%03d] [%s] [%s] ",
+                    st.wYear, st.wMonth, st.wDay,
+                    st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
+                    LevelToString(level), category);
 
-        fprintf(g_logFile, "\n");
-        fflush(g_logFile);
+            va_list args;
+            va_start(args, fmt);
+            vfprintf(g_logFile, fmt, args);
+            va_end(args);
+
+            fprintf(g_logFile, "\n");
+            fflush(g_logFile);
+        }
+
+        if (g_secondaryLogFile)
+        {
+            fprintf(g_secondaryLogFile, "[%04d-%02d-%02d %02d:%02d:%02d.%03d] [%s] [%s] ",
+                    st.wYear, st.wMonth, st.wDay,
+                    st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
+                    LevelToString(level), category);
+
+            va_list args2;
+            va_start(args2, fmt);
+            vfprintf(g_secondaryLogFile, fmt, args2);
+            va_end(args2);
+
+            fprintf(g_secondaryLogFile, "\n");
+            fflush(g_secondaryLogFile);
+        }
     }
 
 } // namespace seamless_arena::native

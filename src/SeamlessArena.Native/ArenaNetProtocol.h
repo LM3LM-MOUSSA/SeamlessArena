@@ -14,6 +14,8 @@
 // =============================================================================
 
 #include <cstdint>
+#include <deque>
+#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -107,7 +109,6 @@ namespace seamless_arena::native
     {
         PacketHeader header = { kPacketMagic, Opcode::MSG_ABORT_MATCH, 0 };
         std::uint64_t senderSteamId;
-        // No additional fields — immediate abort
     };
 
     #pragma pack(pop)
@@ -118,14 +119,19 @@ namespace seamless_arena::native
     // -------------------------------------------------------------------------
     struct NetCommand
     {
-        std::uint8_t  opcode;
-        std::uint64_t senderSteamId;
+        std::uint8_t  opcode = 0;
+        std::uint64_t senderSteamId = 0;
 
-        // Payload union — only the relevant fields are set per opcode
-        std::uint64_t victimId;
-        std::uint64_t killerId;
-        std::uint8_t  readyFlag;
-        // ... extend as needed
+        // Payload fields per opcode
+        std::uint64_t victimId = 0;
+        std::uint64_t killerId = 0;
+        std::uint8_t  readyFlag = 0;
+        std::uint64_t winnerId = 0;
+        bool          isDraw = false;
+        std::uint8_t  mode = 0;
+        std::uint8_t  arenaId = 0;
+        std::uint32_t durationSeconds = 0;
+        std::uint16_t scoreLimit = 0;
     };
 
     // =========================================================================
@@ -134,48 +140,32 @@ namespace seamless_arena::native
     class ArenaNetProtocol
     {
     public:
-        // RESEARCH: rechres/02-seamless-coop-integration.md (Section 2.2)
-        //
-        // PSEUDO:
-        //   Obtain Steam Networking Sockets interface
-        //   Register callback for incoming messages
-        //   Create arena-specific message channel / flag
         bool Initialize();
         void Shutdown();
 
         // -- Sending ----------------------------------------------------------
-        // RESEARCH: rechres/07-multiplayer-authority-sync.md (Section 2)
-        //
-        // PSEUDO:
-        //   Serialize packet struct to bytes
-        //   Validate magic + opcode
-        //   Send via Steam Networking Sockets to target peer(s)
-        //   Increment sequence number
         void SendToHost(const void* packetData, std::size_t packetSize);
         void BroadcastToAllPeers(const void* packetData, std::size_t packetSize);
         void SendToPeer(std::uint64_t targetSteamId, const void* packetData, std::size_t packetSize);
 
+        // -- High-level broadcast helpers -------------------------------------
+        void BroadcastPlayerReady(std::uint64_t steamId, bool isReady);
+        void BroadcastLobbyState(const MsgLobbyState& msg);
+        void BroadcastDeathReport(std::uint64_t victimId, std::uint64_t killerId);
+        void BroadcastMatchEnd(std::uint64_t winnerId, bool isDraw);
+        void BroadcastAbortMatch(std::uint64_t senderId);
+
         // -- Receiving --------------------------------------------------------
-        // RESEARCH: rechres/07-multiplayer-authority-sync.md (Section 4)
-        //
-        // PSEUDO:
-        //   Called from network callback thread:
-        //     Validate magic bytes == 0x5341
-        //     Validate sequence number > last seen (drop stale/duplicates)
-        //     Deserialize payload based on opcode
-        //     Push NetCommand into thread-safe queue
-        //   Called from game thread (ArenaCoordinator::Tick):
-        //     Drain queue and process each command
+        void ProcessPacket(const void* packetData, std::size_t packetSize, std::uint64_t senderSteamId);
+        void EnqueueCommand(const NetCommand& cmd);
         std::optional<NetCommand> DequeueCommand();
 
     private:
         std::uint8_t nextSequence_ = 0;
         std::uint8_t lastReceivedSequence_ = 0;
 
-        // TODO(rechres/07): Thread-safe command queue
-        //   Consider std::mutex + std::deque or a lock-free SPSC ring buffer
-        // std::mutex queueMutex_;
-        // std::deque<NetCommand> commandQueue_;
+        mutable std::mutex queueMutex_;
+        std::deque<NetCommand> commandQueue_;
     };
 
 } // namespace seamless_arena::native

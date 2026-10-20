@@ -100,6 +100,7 @@
     <ClCompile Include="ConfigLoader.cpp" />
     <ClCompile Include="EngineBridge.cpp" />
     <ClCompile Include="HookManager.cpp" />
+    <ClCompile Include="InGameNotification.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="VersionGuard.cpp" />
   </ItemGroup>
@@ -110,6 +111,7 @@
     <ClInclude Include="ConfigLoader.h" />
     <ClInclude Include="EngineBridge.h" />
     <ClInclude Include="HookManager.h" />
+    <ClInclude Include="InGameNotification.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="VersionGuard.h" />
   </ItemGroup>

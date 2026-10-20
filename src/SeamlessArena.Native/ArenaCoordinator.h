@@ -17,12 +17,12 @@
 //
 // All public methods are called from the GAME THREAD only (via Hook_GameTick).
 // Network callbacks queue actions into a thread-safe command queue.
-// =============================================================================
-
+#include "ArenaNetProtocol.h"
 #include <SeamlessArena/Core/MatchRules.h>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace seamless_arena::native
 {
@@ -46,6 +46,8 @@ namespace seamless_arena::native
         Idle,           // No arena activity; normal PvE Seamless session
         Lobby,          // Host selecting mode/arena; peers joining
         ReadyCheck,     // All players must confirm readiness
+        AwaitingArena,  // Ready players; waiting for a verified arena scene-load event
+        WaitingInArena, // Player 1 inside Colosseum waiting for opponent to join/ready
         Countdown,      // Players frozen at spawn; 3-2-1-FIGHT banner
         Active,         // Combat in progress (delegates to MatchRules)
         Complete,       // Win condition met; scores being displayed
@@ -117,6 +119,13 @@ namespace seamless_arena::native
         //   If Ordeal/United: queue respawn for victim after delay
         void OnPlayerDeath(std::uint64_t victimSteamId, std::uint64_t killerSteamId);
 
+        // Records a verified player-to-player damage event for later kill credit.
+        // The eventual game hook must resolve both entities to stable participant IDs
+        // before calling this method. Environment and non-participant damage is ignored.
+        void OnDamageApplied(std::uint64_t attackerSteamId,
+                             std::uint64_t victimSteamId,
+                             float damage);
+
         // RESEARCH: rechres/05-colosseum-map-investigation.md (Section 4.1)
         // RESEARCH: rechres/04-liber-abi-memory-safety.md (Section 3.1 rule 2)
         //
@@ -169,6 +178,18 @@ namespace seamless_arena::native
         void SetPlayerReady(std::uint64_t steamId, bool ready);
         [[nodiscard]] bool AreBothPlayersReady() const noexcept;
 
+        // -- Custom in-game Duel Item ----------------------------------------
+        void OnDuelItemUsed(std::uint64_t steamId, std::uint32_t goodsId);
+        [[nodiscard]] std::uint32_t GetDuelGoodsId() const noexcept { return duelGoodsId_; }
+        void SetDuelGoodsId(std::uint32_t id) noexcept { duelGoodsId_ = id; }
+
+        // -- Lobby Settings ---------------------------------------------------
+        void ApplyLobbySettings(const LobbySettings& settings);
+        [[nodiscard]] const LobbySettings& GetLobbySettings() const noexcept { return lobbySettings_; }
+
+        // -- Network Protocol -------------------------------------------------
+        [[nodiscard]] ArenaNetProtocol& GetNetProtocol() noexcept { return netProtocol_; }
+
         // -- Queries ----------------------------------------------------------
 
         [[nodiscard]] bool IsMatchActive() const;
@@ -181,14 +202,8 @@ namespace seamless_arena::native
 
         // RESEARCH: rechres/05-colosseum-map-investigation.md (Section 2)
         //
-        // PSEUDO: Convert ColosseumId to map ID uint32
-        //   Royal    -> 0x45000000 (m45_00_00_00)
-        //   Caelid   -> 0x45010000 (m45_01_00_00)
-        //   Limgrave -> 0x45020000 (m45_02_00_00)
-        static std::uint32_t ColosseumToMapId(ColosseumId id);
-
-        // RESEARCH: rechres/05-colosseum-map-investigation.md (Section 2)
-        static bool IsColosseumMapId(std::uint32_t mapId);
+        // Map names are known from Smithbox; runtime integer encoding remains unverified.
+        static const char* ColosseumName(ColosseumId id) noexcept;
 
         // RESEARCH: rechres/05-colosseum-map-investigation.md (Section 3)
         // RESEARCH: rechres/08-game-events-hooks.md (Section 4)
@@ -197,6 +212,7 @@ namespace seamless_arena::native
         //   Teleport player to spawn coordinates for their slot/team
         //   Set facing direction based on arena layout
         void TeleportPlayerToSpawn(std::uint64_t steamId, std::uint8_t spawnSlot);
+        void TeleportToColosseum();
 
         // RESEARCH: rechres/06-pvp-match-rules-state-machine.md (Section 4)
         //
@@ -235,6 +251,15 @@ namespace seamless_arena::native
         bool hostReady_{ false };
         bool guestReady_{ false };
         bool deathObserved_{ false };
+        bool cleanupRequested_{ false };
+        struct LastHitRecord
+        {
+            std::uint64_t attackerSteamId{ 0 };
+            float matchTimeSeconds{ 0.0f };
+        };
+        std::unordered_map<std::uint64_t, LastHitRecord> lastHitByVictim_;
+        float matchElapsedSeconds_{ 0.0f };
+        float matchTimeAccumulator_{ 0.0f };
 
         // -- State ------------------------------------------------------------
         ArenaPhase phase_ = ArenaPhase::Idle;
@@ -245,8 +270,8 @@ namespace seamless_arena::native
         float resultsTimer_    = 0.0f;
         float syncBroadcastAccumulator_ = 0.0f;
 
-        // TODO(rechres/07): Network protocol instance
-        // ArenaNetProtocol netProtocol_;
+        std::uint32_t duelGoodsId_{ 101 }; // Duelist's Furled Finger (Key Items ID 101)
+        ArenaNetProtocol netProtocol_{};
 
         // TODO(rechres/04 Section 3.1 rule 2): Cached entity pointers
         //   Clear these on every loading screen

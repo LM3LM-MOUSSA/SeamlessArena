@@ -101,10 +101,19 @@ namespace seamless_arena::native
     //        - Check for pending respawns
     //        - Broadcast score sync packets
     //
-    // IMPORTANT (rechres/04 Section 3.1 rule 1):
-    //   All game state mutations MUST happen inside this game-thread tick.
-    //   Network callbacks only queue actions for the next tick.
+    // -- Custom in-game Duel Item use observation ----------------------------
+    // RESEARCH: rechres/12-custom-item-to-native-hook.md (ALL sections)
+    //
+    // Intercepts player item usage for the configured custom Arena Duel item
+    // (Goods ID from SeamlessArena.toml, default 220000). Triggers local Ready
+    // and initiates 1v1 Duel lobby flow.
     // -------------------------------------------------------------------------
+    bool Hook_DuelItemUse();
+
     bool Hook_GameTick();
+
+    // Safely request map load via cached FieldArea if available
+    bool HookManager_RequestMapLoad(uint32_t mapId);
+    void* HookManager_GetCachedFieldArea() noexcept;
 
 } // namespace seamless_arena::native
