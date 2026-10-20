@@ -76,7 +76,7 @@ f:\dev\SeamlessArena\
 
 ---
 
-## ⚙️ Configuration (`SeamlessArena.toml`)
+##  Configuration (`SeamlessArena.toml`)
 
 ```toml
 [general]
