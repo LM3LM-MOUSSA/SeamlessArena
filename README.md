@@ -4,7 +4,7 @@
 
 ---
 
-## 🎯 Alpha Milestone Feature Scope
+##  Alpha Milestone Feature Scope
 
 The Alpha release delivers a focused, highly stable **1v1 Duel Vertical Slice**:
 
@@ -41,7 +41,7 @@ The Alpha release delivers a focused, highly stable **1v1 Duel Vertical Slice**:
 
 ---
 
-## 🏗️ Architecture & Project Structure
+##  Architecture & Project Structure
 
 The project is structured into modular Visual Studio / CMake C++20 components:
 
@@ -101,7 +101,7 @@ allow_spirit_ashes = false
 
 ---
 
-## 🚀 Building & Validation
+##  Building & Validation
 
 ### Prerequisites
 - Windows 10/11 x64
@@ -150,7 +150,7 @@ Test Summary: 18 Passed, 0 Failed
 
 ---
 
-## 🎮 Installation with ME3 & Seamless Co-op
+##  Installation with ME3 & Seamless Co-op
 
 1. Ensure **Elden Ring** (v1.16/v1.16.1) and **Seamless Co-op** (`ersc.dll`) are installed.
 2. In `SeamlessArena.me3`, confirm that the path to `ersc.dll` matches your Seamless Co-op installation.
@@ -178,7 +178,7 @@ Test Summary: 18 Passed, 0 Failed
 
 ---
 
-## 📄 License & Credits
+##  License & Credits
 
 - SeamlessArena is distributed under the MIT License.
 - Seamless Co-op is created and maintained by [LukeYui](https://github.com/yuiamoroll/EldenRingSeamlessCoopRelease).
